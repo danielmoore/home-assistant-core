@@ -1,7 +1,7 @@
 """The cert_expiry component."""
 
 from homeassistant.const import CONF_HOST, CONF_PORT, Platform
-from homeassistant.core import HomeAssistant
+from homeassistant.core import CoreState, HomeAssistant
 from homeassistant.helpers.start import async_at_started
 
 from .coordinator import CertExpiryConfigEntry, CertExpiryDataUpdateCoordinator
@@ -21,11 +21,18 @@ async def async_setup_entry(hass: HomeAssistant, entry: CertExpiryConfigEntry) -
     if entry.unique_id is None:
         hass.config_entries.async_update_entry(entry, unique_id=f"{host}:{port}")
 
-    async def _async_finish_startup(_: HomeAssistant) -> None:
-        await coordinator.async_refresh()
-        await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
+    if hass.state is not CoreState.running:
+        # Monitoring Home Assistant's own certificate fails until its HTTP
+        # server is listening, so defer the first check during boot (#56266).
+        async def _async_finish_startup(_: HomeAssistant) -> None:
+            await coordinator.async_refresh()
+            await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
 
-    async_at_started(hass, _async_finish_startup)
+        async_at_started(hass, _async_finish_startup)
+        return True
+
+    await coordinator.async_config_entry_first_refresh()
+    await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
     return True
 
 
