@@ -28,6 +28,7 @@ class CertExpiryBinarySensorEntityDescription(BinarySensorEntityDescription):
     """Describes a Cert Expiry binary sensor entity."""
 
     is_on_fn: Callable[[CertExpiryData], bool]
+    reason_fn: Callable[[CertExpiryData], str | None] | None = None
 
 
 PROBLEM_DESCRIPTION = CertExpiryBinarySensorEntityDescription(
@@ -51,6 +52,7 @@ CHECK_DESCRIPTIONS: tuple[CertExpiryBinarySensorEntityDescription, ...] = (
         device_class=BinarySensorDeviceClass.PROBLEM,
         entity_category=EntityCategory.DIAGNOSTIC,
         is_on_fn=lambda data: data.cert_error is not None,
+        reason_fn=lambda data: data.cert_error,
     ),
     CertExpiryBinarySensorEntityDescription(
         key="tls_version_unsupported",
@@ -58,6 +60,7 @@ CHECK_DESCRIPTIONS: tuple[CertExpiryBinarySensorEntityDescription, ...] = (
         device_class=BinarySensorDeviceClass.PROBLEM,
         entity_category=EntityCategory.DIAGNOSTIC,
         is_on_fn=lambda data: data.tls_version_error is not None,
+        reason_fn=lambda data: data.tls_version_error,
     ),
     CertExpiryBinarySensorEntityDescription(
         key="cipher_unsupported",
@@ -65,6 +68,7 @@ CHECK_DESCRIPTIONS: tuple[CertExpiryBinarySensorEntityDescription, ...] = (
         device_class=BinarySensorDeviceClass.PROBLEM,
         entity_category=EntityCategory.DIAGNOSTIC,
         is_on_fn=lambda data: data.cipher_error is not None,
+        reason_fn=lambda data: data.cipher_error,
     ),
 )
 
@@ -110,6 +114,14 @@ class CertExpiryBinarySensor(CertExpiryEntity, BinarySensorEntity):
     def is_on(self) -> bool:
         """Return whether the check found a problem."""
         return self.entity_description.is_on_fn(self.coordinator.data)
+
+    @property
+    @override
+    def extra_state_attributes(self) -> dict[str, Any] | None:
+        """Return additional state attributes."""
+        if self.entity_description.reason_fn is None:
+            return None
+        return {"reason": self.entity_description.reason_fn(self.coordinator.data)}
 
 
 class CertificateInvalidBinarySensor(CertExpiryBinarySensor):

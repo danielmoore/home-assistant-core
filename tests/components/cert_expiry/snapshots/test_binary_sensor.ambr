@@ -93,6 +93,7 @@
     'attributes': ReadOnlyDict({
       <EntityStateAttribute.DEVICE_CLASS: 'device_class'>: 'problem',
       <EntityStateAttribute.FRIENDLY_NAME: 'friendly_name'>: 'example.com Certificate untrusted',
+      'reason': None,
     }),
     'context': <ANY>,
     'entity_id': 'binary_sensor.example_com_certificate_untrusted',
@@ -144,6 +145,7 @@
     'attributes': ReadOnlyDict({
       <EntityStateAttribute.DEVICE_CLASS: 'device_class'>: 'problem',
       <EntityStateAttribute.FRIENDLY_NAME: 'friendly_name'>: 'example.com Cipher unsupported',
+      'reason': None,
     }),
     'context': <ANY>,
     'entity_id': 'binary_sensor.example_com_cipher_unsupported',
@@ -246,6 +248,7 @@
     'attributes': ReadOnlyDict({
       <EntityStateAttribute.DEVICE_CLASS: 'device_class'>: 'problem',
       <EntityStateAttribute.FRIENDLY_NAME: 'friendly_name'>: 'example.com TLS version unsupported',
+      'reason': None,
     }),
     'context': <ANY>,
     'entity_id': 'binary_sensor.example_com_tls_version_unsupported',
