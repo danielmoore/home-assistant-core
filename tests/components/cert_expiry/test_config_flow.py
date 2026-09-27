@@ -66,13 +66,11 @@ async def test_user_with_bad_cert(hass: HomeAssistant) -> None:
     assert result["result"].unique_id == f"{HOST}:{PORT}"
 
 
-async def test_abort_if_already_setup(hass: HomeAssistant) -> None:
+async def test_abort_if_already_setup(
+    hass: HomeAssistant, mock_config_entry: MockConfigEntry
+) -> None:
     """Test we abort if the cert is already setup."""
-    MockConfigEntry(
-        domain=DOMAIN,
-        data={CONF_HOST: HOST, CONF_PORT: PORT},
-        unique_id=f"{HOST}:{PORT}",
-    ).add_to_hass(hass)
+    mock_config_entry.add_to_hass(hass)
 
     result = await hass.config_entries.flow.async_init(
         DOMAIN,
@@ -129,16 +127,13 @@ async def test_abort_on_socket_failed(
     assert result["result"].unique_id == f"{HOST}:{PORT}"
 
 
-async def test_reconfigure_successful(hass: HomeAssistant) -> None:
+async def test_reconfigure_successful(
+    hass: HomeAssistant, mock_config_entry: MockConfigEntry
+) -> None:
     """Test reconfiguration of an existing entry updates its data and unique_id."""
-    entry = MockConfigEntry(
-        domain=DOMAIN,
-        data={CONF_HOST: HOST, CONF_PORT: PORT},
-        unique_id=f"{HOST}:{PORT}",
-    )
-    entry.add_to_hass(hass)
+    mock_config_entry.add_to_hass(hass)
 
-    result = await entry.start_reconfigure_flow(hass)
+    result = await mock_config_entry.start_reconfigure_flow(hass)
     assert result["type"] is FlowResultType.FORM
     assert result["step_id"] == "reconfigure"
 
@@ -151,9 +146,9 @@ async def test_reconfigure_successful(hass: HomeAssistant) -> None:
 
     assert result["type"] is FlowResultType.ABORT
     assert result["reason"] == "reconfigure_successful"
-    assert entry.data[CONF_HOST] == new_host
-    assert entry.data[CONF_PORT] == new_port
-    assert entry.unique_id == f"{new_host}:{new_port}"
+    assert mock_config_entry.data[CONF_HOST] == new_host
+    assert mock_config_entry.data[CONF_PORT] == new_port
+    assert mock_config_entry.unique_id == f"{new_host}:{new_port}"
 
 
 @pytest.mark.parametrize(
@@ -166,17 +161,15 @@ async def test_reconfigure_successful(hass: HomeAssistant) -> None:
     ],
 )
 async def test_reconfigure_validation_failure_recovers(
-    hass: HomeAssistant, side_effect: Exception, error_key: str
+    hass: HomeAssistant,
+    mock_config_entry: MockConfigEntry,
+    side_effect: Exception,
+    error_key: str,
 ) -> None:
     """Test the reconfigure form re-shows on failure then recovers on retry."""
-    entry = MockConfigEntry(
-        domain=DOMAIN,
-        data={CONF_HOST: HOST, CONF_PORT: PORT},
-        unique_id=f"{HOST}:{PORT}",
-    )
-    entry.add_to_hass(hass)
+    mock_config_entry.add_to_hass(hass)
 
-    result = await entry.start_reconfigure_flow(hass)
+    result = await mock_config_entry.start_reconfigure_flow(hass)
     assert result["type"] is FlowResultType.FORM
     assert result["step_id"] == "reconfigure"
 
@@ -195,8 +188,8 @@ async def test_reconfigure_validation_failure_recovers(
     assert result["type"] is FlowResultType.FORM
     assert result["step_id"] == "reconfigure"
     assert result["errors"] == {CONF_HOST: error_key}
-    assert entry.data[CONF_HOST] == HOST
-    assert entry.data[CONF_PORT] == PORT
+    assert mock_config_entry.data[CONF_HOST] == HOST
+    assert mock_config_entry.data[CONF_PORT] == PORT
 
     with patch("homeassistant.components.cert_expiry.config_flow.async_get_cert"):
         result = await hass.config_entries.flow.async_configure(
@@ -206,12 +199,14 @@ async def test_reconfigure_validation_failure_recovers(
 
     assert result["type"] is FlowResultType.ABORT
     assert result["reason"] == "reconfigure_successful"
-    assert entry.data[CONF_HOST] == new_host
-    assert entry.data[CONF_PORT] == new_port
-    assert entry.unique_id == f"{new_host}:{new_port}"
+    assert mock_config_entry.data[CONF_HOST] == new_host
+    assert mock_config_entry.data[CONF_PORT] == new_port
+    assert mock_config_entry.unique_id == f"{new_host}:{new_port}"
 
 
-async def test_reconfigure_already_exists(hass: HomeAssistant) -> None:
+async def test_reconfigure_already_exists(
+    hass: HomeAssistant, mock_config_entry: MockConfigEntry
+) -> None:
     """Test reconfiguration aborts when target host:port matches another entry."""
     other_host = "other.example.com"
     other_port = 8443
@@ -221,14 +216,9 @@ async def test_reconfigure_already_exists(hass: HomeAssistant) -> None:
         unique_id=f"{other_host}:{other_port}",
     ).add_to_hass(hass)
 
-    entry = MockConfigEntry(
-        domain=DOMAIN,
-        data={CONF_HOST: HOST, CONF_PORT: PORT},
-        unique_id=f"{HOST}:{PORT}",
-    )
-    entry.add_to_hass(hass)
+    mock_config_entry.add_to_hass(hass)
 
-    result = await entry.start_reconfigure_flow(hass)
+    result = await mock_config_entry.start_reconfigure_flow(hass)
     assert result["type"] is FlowResultType.FORM
     assert result["step_id"] == "reconfigure"
 
@@ -239,5 +229,5 @@ async def test_reconfigure_already_exists(hass: HomeAssistant) -> None:
 
     assert result["type"] is FlowResultType.ABORT
     assert result["reason"] == "already_configured"
-    assert entry.data[CONF_HOST] == HOST
-    assert entry.data[CONF_PORT] == PORT
+    assert mock_config_entry.data[CONF_HOST] == HOST
+    assert mock_config_entry.data[CONF_PORT] == PORT
